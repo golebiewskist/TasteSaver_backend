@@ -3,4 +3,4 @@ from django.apps import AppConfig
 
 class AccounstConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'accounst'
+    name = 'accounts'

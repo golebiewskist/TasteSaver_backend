@@ -2,8 +2,8 @@ from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from accounst.models import CustomUser
-from accounst.serializers import MyTokenObtainPairSerializer, RegisterSerializer
+from accounts.models import CustomUser
+from accounts.serializers import MyTokenObtainPairSerializer, RegisterSerializer
 
 
 class MyTokenObtainPairView(TokenObtainPairView):

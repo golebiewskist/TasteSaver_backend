@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from accounst.models import CustomUser
+from accounts.models import CustomUser
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
