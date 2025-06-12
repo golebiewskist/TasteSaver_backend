@@ -1,36 +1,39 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
 from .models import Product, PantryPosition
-from .serializers import (
-    ProductSerializer,
-    CreatePantryPositionSerializer
-)
+from .serializers import ProductSerializer, PantryPositionSerializer
 
 
 class ProductListView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.IsAdminUser]  # Tylko admin może dodawać produkty
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            return [permissions.IsAuthenticated()]
-        return [permissions.IsAdminUser()]
+    def perform_create(self, serializer):
+        barcode = serializer.validated_data.get('barcode')
+
+        if Product.objects.filter(barcode=barcode).exists():
+            raise ValidationError({'barcode': 'Product with this barcode already exists.'})
+
+        serializer.save()
 
 
-class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
+class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.IsAdminUser]
-    lookup_field = 'id'
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'barcode'
 
 
+class PantryPositionsListView(generics.ListAPIView):
+    serializer_class = PantryPositionSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
-
-
-
-class PantryPositionCreateView(generics.CreateAPIView):
-    serializer_class = CreatePantryPositionSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+    def get_queryset(self):
+        return PantryPosition.objects.filter(user=self.request.user)
