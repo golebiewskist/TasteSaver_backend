@@ -37,3 +37,31 @@ class PantryPositionsListView(generics.ListAPIView):
 
     def get_queryset(self):
         return PantryPosition.objects.filter(user=self.request.user)
+
+class PantryPositionDetailView(generics.RetrieveAPIView):
+    serializer_class = PantryPositionSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'barcode'
+
+    def get_queryset(self):
+        return PantryPosition.objects.filter(user=self.request.user)
+
+
+class PantryPositionCreateView(generics.CreateAPIView):
+    serializer_class = PantryPositionSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'barcode'
+
+    def get_queryset(self):
+        return PantryPosition.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        barcode = serializer.validated_data.get('barcode')
+        if Product.objects.filter(barcode=barcode).exists():
+            Product.objects.filter(barcode=barcode).a
+
+
+
+
