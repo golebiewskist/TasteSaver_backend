@@ -1,7 +1,7 @@
 from datetime import timedelta
-from random import betavariate
 
 from django.utils import timezone
+from translate import Translator
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.generics import ListAPIView
@@ -15,18 +15,77 @@ from .serializers import ProductSerializer, PantryPositionSerializer
 
 
 class ProductListView(generics.ListCreateAPIView):
-    queryset = Product.objects.all()
     serializer_class = ProductSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        barcode = serializer.validated_data.get('barcode')
 
-        if Product.objects.filter(barcode=barcode).exists():
+    def perform_create(self, serializer):
+        data = serializer.validated_data.copy()
+        language = self.request.headers.get('Language', 'en')
+
+        # Tłumacz na angielski jeśli język źródłowy nie jest angielski
+        if language != 'en':
+            translator = Translator(from_lang=language, to_lang='en')
+
+            if 'name' in data and data['name']:
+                try:
+                    data['name'] = translator.translate(data['name'])
+                except Exception as e:
+                    print(f"Name translation error: {str(e)}")
+
+            if 'description' in data and data['description']:
+                try:
+                    data['description'] = translator.translate(data['description'])
+                except Exception as e:
+                    print(f"Description translation error: {str(e)}")
+
+        barcode = data.get('barcode')
+        if barcode and Product.objects.filter(barcode=barcode).exists():
             raise ValidationError({'barcode': 'Product with this barcode already exists.'})
 
-        serializer.save()
+        # Zapisz przetłumaczone dane
+        serializer.save(**data)
+
+    def get_queryset(self):
+        return Product.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        # Pobierz standardową odpowiedź
+        response = super().list(request, *args, **kwargs)
+        language = request.headers.get('Language', 'en')
+
+        # Jeśli język angielski - zwróć bez zmian
+        if language == 'en':
+            return response
+
+        # Utwórz synchroniczny tłumacz
+        translator = Translator(to_lang=language)
+
+        translated_data = []
+        for product in response.data:
+            translated = self.translate_product_data(product, translator)
+            translated_data.append(translated)
+
+        response.data = translated_data
+        return response
+
+    def translate_product_data(self, product_data, translator):
+        """Tłumaczy pola produktu przy użyciu synchronicznego tłumacza"""
+        try:
+            translated = dict(product_data)
+
+            if 'name' in translated and translated['name']:
+                translated['name'] = translator.translate(translated['name'])
+
+            if 'description' in translated and translated['description']:
+                translated['description'] = translator.translate(translated['description'])
+
+            return translated
+
+        except Exception as e:
+            print(f"Translation error: {str(e)}")
+            return product_data
 
 
 class ProductDetailView(generics.RetrieveAPIView):
@@ -35,6 +94,72 @@ class ProductDetailView(generics.RetrieveAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     lookup_field = 'barcode'
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+
+        language = request.headers.get('Language', 'en')
+        if language != 'en':
+            data = self.translate_product_data(data, language)
+
+        return Response(data)
+
+    def translate_product_data(self, product_data, language):
+        """Tłumaczy pola produktu na język docelowy"""
+        try:
+            translator = Translator(to_lang=language)
+            translated = dict(product_data)
+
+            if 'name' in translated and translated['name']:
+                translated['name'] = translator.translate(translated['name'])
+
+            if 'description' in translated and translated['description']:
+                translated['description'] = translator.translate(translated['description'])
+
+            return translated
+
+        except Exception as e:
+            print(f"Translation error: {str(e)}")
+            return product_data
+
+
+class ProductDetailByIDView(generics.RetrieveAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+
+        language = request.headers.get('Language', 'en')
+        if language != 'en':
+            data = self.translate_product_data(data, language)
+
+        return Response(data)
+
+    def translate_product_data(self, product_data, language):
+        """Tłumaczy pola produktu na język docelowy"""
+        try:
+            translator = Translator(to_lang=language)
+            translated = dict(product_data)
+
+            if 'name' in translated and translated['name']:
+                translated['name'] = translator.translate(translated['name'])
+
+            if 'description' in translated and translated['description']:
+                translated['description'] = translator.translate(translated['description'])
+
+            return translated
+
+        except Exception as e:
+            print(f"Translation error: {str(e)}")
+            return product_data
 
 
 class PantryPositionsListView(generics.ListAPIView):
@@ -63,10 +188,13 @@ class PantryPositionCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         barcode = self.request.data.get('barcode')
         best_before = self.request.data.get('best_before')
-        quantity = self.request.data.get('quantity', 1)
+        quantity = self.request.data.get('quantity')
 
         if not barcode:
             raise ValidationError({'barcode': 'This field is required'})
+
+        if not quantity:
+            raise ValidationError({'quantity': 'This field is required'})
 
         try:
             product = Product.objects.get(barcode=barcode)

@@ -5,9 +5,12 @@ from .views import GetOldPantryPositionsView
 urlpatterns = [
     path('products/', views.ProductListView.as_view(), name='product-list'),
     path('products/<str:barcode>/', views.ProductDetailView.as_view(), name='product-detail'),
+
+    path('products/id/<str:id>/', views.ProductDetailByIDView.as_view(), name='product-detail'),
     path('pantry-positions/', views.PantryPositionsListView.as_view(), name='pantry-position-list'),
 
     path('pantry-positions/<str:barcode>/', views.PantryPositionDetailView.as_view(), name='pantry-position-detail'),
+    path('pantry-positions/add/', views.PantryPositionCreateView.as_view(), name='pantry-position-add'),
 
     path('pantry-positions/<str:barcode>/remove/', views.RemoveQuantityFromPantryView.as_view(), name='pantry-position-remove'),
 
