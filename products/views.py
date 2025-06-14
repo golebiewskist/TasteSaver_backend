@@ -1,5 +1,6 @@
 from datetime import timedelta, datetime
 
+import requests
 from django.utils import timezone
 from translate import Translator
 from rest_framework import generics, status
@@ -11,7 +12,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .models import Product, PantryPosition
-from .serializers import ProductSerializer, PantryPositionSerializer
+from .serializers import ProductSerializer, PantryPositionSerializer, PantryPositionWithProductSerializer
 
 
 class ProductListView(generics.ListCreateAPIView):
@@ -264,8 +265,153 @@ class GetOldPantryPositionsView(ListAPIView):
     serializer_class = PantryPositionSerializer
 
     def get_queryset(self):
-        today = timezone.now().date() + timedelta(days=10)
+        date = timezone.now().date() + timedelta(days=10)
         return PantryPosition.objects.filter(
             user=self.request.user,
-            best_before__lt=today
+            best_before__lt=date
         ).order_by('-best_before')
+
+
+class RecipeSuggestionView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        language = self.request.headers.get('Language', 'en')
+
+        positions = PantryPosition.objects.filter(
+            user=request.user,
+        ).order_by('best_before')
+
+        if not positions:
+            return Response(
+                {"detail": "No ingredients found in your pantry"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        closest_position = positions[0]
+        ingredient_name = closest_position.product.name
+
+        try:
+            response = requests.get(
+                "https://www.themealdb.com/api/json/v1/1/filter.php",
+                params={'i': ingredient_name},
+                timeout=5  # 5 sekund timeout
+            )
+
+            if response.status_code != 200:
+                return Response(
+                    {"detail": "Failed to fetch recipes from TheMealDB"},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
+
+            data = response.json()
+            meals = data.get('meals', [])
+
+            if not meals:
+                return Response(
+                    {"detail": f"No recipes found for {ingredient_name}"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            first_recipe = meals[0]
+
+            recipe_id = first_recipe.get('idMeal')
+
+            response = requests.get(
+                "https://www.themealdb.com/api/json/v1/1/lookup.php",
+                params = {'i': recipe_id},
+                timeout = 5
+            )
+
+            data = response.json()
+            meals = data.get('meals', [])
+            recipe = meals[0]
+
+            recipe_name = recipe.get('strMeal')
+
+            instructions = recipe.get('strInstructions')
+
+            if language == 'en':
+                return Response({
+                    'recipe_name': recipe_name,
+                    'instructions': instructions
+                })
+
+            else:
+                translator = Translator(to_lang=language)
+                recipe_name = translator.translate(recipe_name)
+
+                instructions_trans = ""
+                if instructions:
+                    chunk_size = 500
+                    chunks = [
+                        instructions[i:i + chunk_size]
+                        for i in range(0, len(instructions), chunk_size)
+                    ]
+
+                    for chunk in chunks:
+                        try:
+                            translated_chunk = translator.translate(chunk)
+                            instructions_trans += translated_chunk + " "
+                        except Exception:
+                            instructions_trans += chunk + " "
+
+
+                return Response({
+                    'recipe_name': recipe_name,
+                    'instructions': instructions_trans
+                })
+
+
+        except requests.exceptions.RequestException as e:
+            return Response(
+                {"detail": f"API request failed: {str(e)}"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+
+class PantryPositionsWithProductView(generics.ListAPIView):
+    serializer_class = PantryPositionWithProductSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return PantryPosition.objects.filter(user=self.request.user).select_related('product')
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        language = request.headers.get('Language', 'en')
+
+        if language == 'en':
+            return response
+
+        translator = Translator(to_lang=language)
+        translated_data = []
+
+        for position in response.data:
+            try:
+                # Stwórz kopię danych
+                translated = dict(position)
+
+                # Tłumacz dane produktu
+                if 'product' in translated and translated['product']:
+                    product = translated['product']
+
+                    if 'name' in product and product['name']:
+                        product['name'] = translator.translate(product['name'])
+
+                    if 'description' in product and product['description']:
+                        product['description'] = translator.translate(product['description'])
+
+                    translated['product'] = product
+
+                translated_data.append(translated)
+
+            except Exception as e:
+                print(f"Translation error: {str(e)}")
+                translated_data.append(position)
+
+        response.data = translated_data
+        return response

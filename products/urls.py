@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import GetOldPantryPositionsView
+from .views import GetOldPantryPositionsView, RecipeSuggestionView, PantryPositionsWithProductView
 
 urlpatterns = [
     path('products/', views.ProductListView.as_view(), name='product-list'),
@@ -12,5 +12,7 @@ urlpatterns = [
 
     path('pantry-positions/remove/<str:barcode>/', views.RemoveQuantityFromPantryView.as_view(), name='pantry-position-remove'),
 
-    path('pantry-positions/old', GetOldPantryPositionsView.as_view(), name='pantry-positions-old'),
+    path('pantry-positions/old/', GetOldPantryPositionsView.as_view(), name='pantry-positions-old'),
+    path('pantry-positions/recipe/', RecipeSuggestionView.as_view(), name='pantry-positions-recipe'),
+    path('pantry-positions-with-product/', PantryPositionsWithProductView.as_view(), name='pantry-positions-with-product'),
 ]

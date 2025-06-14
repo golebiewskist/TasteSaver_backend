@@ -13,3 +13,11 @@ class PantryPositionSerializer(serializers.ModelSerializer):
         model = PantryPosition
         fields = [ 'product', 'quantity', 'best_before']
         read_only_fields = ['product']
+
+
+class PantryPositionWithProductSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
+
+    class Meta:
+        model = PantryPosition
+        fields = [ 'product', 'quantity', 'best_before']
