@@ -16,8 +16,8 @@ from .serializers import ProductSerializer, PantryPositionSerializer
 
 class ProductListView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
-    #authentication_classes = [JWTAuthentication]
-    #permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
 
     def perform_create(self, serializer):
@@ -91,8 +91,8 @@ class ProductListView(generics.ListCreateAPIView):
 class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-   # authentication_classes = [JWTAuthentication]
-   # permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     lookup_field = 'barcode'
 
     def retrieve(self, request, *args, **kwargs):
@@ -128,8 +128,8 @@ class ProductDetailView(generics.RetrieveAPIView):
 
 class PantryPositionsListView(generics.ListAPIView):
     serializer_class = PantryPositionSerializer
-    #authentication_classes = [JWTAuthentication]
-    #permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return PantryPosition.objects.filter()#user=self.request.user)
@@ -259,13 +259,13 @@ class RemoveQuantityFromPantryView(APIView):
 
 
 class GetOldPantryPositionsView(ListAPIView):
-    #authentication_classes = [JWTAuthentication]
-    #permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = PantryPositionSerializer
 
     def get_queryset(self):
         today = timezone.now().date() + timedelta(days=10)
         return PantryPosition.objects.filter(
-            #user=self.request.user,
+            user=self.request.user,
             best_before__lt=today
         ).order_by('-best_before')
