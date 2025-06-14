@@ -1,10 +1,10 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from django.utils import timezone
 from translate import Translator
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError, NotFound
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -168,16 +168,29 @@ class PantryPositionsListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return PantryPosition.objects.filter(user=self.request.user)
+        return PantryPosition.objects.filter()#user=self.request.user)
 
-class PantryPositionDetailView(generics.RetrieveAPIView):
+class PantryPositionDetailView(generics.ListAPIView):
     serializer_class = PantryPositionSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    lookup_field = 'barcode'
+
+    lookup = 'barcode'
 
     def get_queryset(self):
-        return PantryPosition.objects.filter(user=self.request.user)
+        barcode = self.kwargs['barcode']
+        try:
+            product = Product.objects.filter(barcode=barcode).first()
+        except Product.DoesNotExist:
+            raise NotFound(f"Product with barcode {barcode} does not exist")
+
+        try:
+            return PantryPosition.objects.filter(
+                #user=self.request.user,
+                product=product
+            )
+        except PantryPosition.DoesNotExist:
+            raise NotFound("Pantry position not found for this product")
 
 
 class PantryPositionCreateView(generics.CreateAPIView):
@@ -201,7 +214,6 @@ class PantryPositionCreateView(generics.CreateAPIView):
         except Product.DoesNotExist:
             raise NotFound(f"Product with barcode {barcode} does not exist")
 
-        
         existing_position = PantryPosition.objects.filter(
             user=self.request.user,
             product=product,

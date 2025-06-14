@@ -9,10 +9,10 @@ urlpatterns = [
     path('products/id/<str:id>/', views.ProductDetailByIDView.as_view(), name='product-detail'),
     path('pantry-positions/', views.PantryPositionsListView.as_view(), name='pantry-position-list'),
 
-    path('pantry-positions/<str:barcode>/', views.PantryPositionDetailView.as_view(), name='pantry-position-detail'),
+    path('pantry-positions/get/<str:barcode>/', views.PantryPositionDetailView.as_view(), name='pantry-position-detail'),
     path('pantry-positions/add/', views.PantryPositionCreateView.as_view(), name='pantry-position-add'),
 
-    path('pantry-positions/<str:barcode>/remove/', views.RemoveQuantityFromPantryView.as_view(), name='pantry-position-remove'),
+    path('pantry-positions/remove/<str:barcode>/', views.RemoveQuantityFromPantryView.as_view(), name='pantry-position-remove'),
 
     path('pantry-positions/old', GetOldPantryPositionsView.as_view(), name='pantry-positions-old'),
 ]
