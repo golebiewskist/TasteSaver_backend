@@ -5,16 +5,11 @@ from .models import Product, PantryPosition
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'barcode']
-        read_only_fields = ['id']
+        fields = [ 'name', 'description', 'barcode']
 
 class PantryPositionSerializer(serializers.ModelSerializer):
-    barcode = serializers.CharField(write_only=True)
 
     class Meta:
         model = PantryPosition
-        fields = [ 'product', 'quantity', 'best_before', 'barcode']
+        fields = [ 'product', 'quantity', 'best_before']
         read_only_fields = ['product']
-        extra_kwargs = {
-            'product': {'required': False}
-        }

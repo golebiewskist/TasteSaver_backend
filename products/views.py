@@ -16,8 +16,8 @@ from .serializers import ProductSerializer, PantryPositionSerializer
 
 class ProductListView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    #authentication_classes = [JWTAuthentication]
+    #permission_classes = [IsAuthenticated]
 
 
     def perform_create(self, serializer):
@@ -91,8 +91,8 @@ class ProductListView(generics.ListCreateAPIView):
 class ProductDetailView(generics.RetrieveAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+   # authentication_classes = [JWTAuthentication]
+   # permission_classes = [IsAuthenticated]
     lookup_field = 'barcode'
 
     def retrieve(self, request, *args, **kwargs):
@@ -125,47 +125,11 @@ class ProductDetailView(generics.RetrieveAPIView):
             return product_data
 
 
-class ProductDetailByIDView(generics.RetrieveAPIView):
-    queryset = Product.objects.all()
-    serializer_class = ProductSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'id'
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        data = serializer.data
-
-        language = request.headers.get('Language', 'en')
-        if language != 'en':
-            data = self.translate_product_data(data, language)
-
-        return Response(data)
-
-    def translate_product_data(self, product_data, language):
-        """Tłumaczy pola produktu na język docelowy"""
-        try:
-            translator = Translator(to_lang=language)
-            translated = dict(product_data)
-
-            if 'name' in translated and translated['name']:
-                translated['name'] = translator.translate(translated['name'])
-
-            if 'description' in translated and translated['description']:
-                translated['description'] = translator.translate(translated['description'])
-
-            return translated
-
-        except Exception as e:
-            print(f"Translation error: {str(e)}")
-            return product_data
-
 
 class PantryPositionsListView(generics.ListAPIView):
     serializer_class = PantryPositionSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    #authentication_classes = [JWTAuthentication]
+    #permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return PantryPosition.objects.filter()#user=self.request.user)
@@ -199,20 +163,20 @@ class PantryPositionCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        barcode = self.request.data.get('barcode')
+        product = self.request.data.get('product')
         best_before = self.request.data.get('best_before')
         quantity = self.request.data.get('quantity')
 
-        if not barcode:
-            raise ValidationError({'barcode': 'This field is required'})
+        if not product:
+            raise ValidationError({'product': 'This field is required'})
 
         if not quantity:
             raise ValidationError({'quantity': 'This field is required'})
 
         try:
-            product = Product.objects.filter(barcode=barcode).first()
+            product = Product.objects.filter(barcode=product).first()
         except Product.DoesNotExist:
-            raise NotFound(f"Product with barcode {barcode} does not exist")
+            raise NotFound(f"Product with barcode {product} does not exist")
 
         existing_position = PantryPosition.objects.filter(
             user=self.request.user,
@@ -295,10 +259,13 @@ class RemoveQuantityFromPantryView(APIView):
 
 
 class GetOldPantryPositionsView(ListAPIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    #authentication_classes = [JWTAuthentication]
+    #permission_classes = [IsAuthenticated]
     serializer_class = PantryPositionSerializer
 
     def get_queryset(self):
         today = timezone.now().date() + timedelta(days=10)
-        return PantryPosition.objects.filter(user=self.request.user, best_before__lt=today ).order_by('-best_before')
+        return PantryPosition.objects.filter(
+            #user=self.request.user,
+            best_before__lt=today
+        ).order_by('-best_before')
