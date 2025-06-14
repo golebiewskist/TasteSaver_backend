@@ -210,7 +210,7 @@ class PantryPositionCreateView(generics.CreateAPIView):
             raise ValidationError({'quantity': 'This field is required'})
 
         try:
-            product = Product.objects.get(barcode=barcode)
+            product = Product.objects.filter(barcode=barcode).first()
         except Product.DoesNotExist:
             raise NotFound(f"Product with barcode {barcode} does not exist")
 

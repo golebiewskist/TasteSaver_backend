@@ -9,6 +9,12 @@ class ProductSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 class PantryPositionSerializer(serializers.ModelSerializer):
+    barcode = serializers.CharField(write_only=True)
+
     class Meta:
         model = PantryPosition
-        fields = [ 'product', 'quantity', 'best_before']
+        fields = [ 'product', 'quantity', 'best_before', 'barcode']
+        read_only_fields = ['product']
+        extra_kwargs = {
+            'product': {'required': False}
+        }
