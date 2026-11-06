@@ -1,19 +1,34 @@
 # TasteSaver Backend API
 
 > **Platforma zapobiegania marnowaniu żywności – API REST & Zarządzanie Spiżarnią**  
-> **Autor:** Stanisław Gołębiewski  
+> **Autorzy projektu:**  
+> - **Stanisław Gołębiewski** – Architektura backendu, API REST, autoryzacja JWT, baza danych, Docker  
+> - **Kacper Kozłowski** ([@KacperK2003](https://github.com/KacperK2003)) – Aplikacja mobilna Android, skaner kodów kreskowych  
+> **Przedmiot:** Inżynieria Oprogramowania / Aplikacje Mobilne, WAT (Grupa WCY22IJ3S1)  
 > **Stos:** Python 3, Django, Django REST Framework, SimpleJWT, PostgreSQL / SQLite, Docker  
 
 ---
 
 ## 📌 O Projekcie
 
-**TasteSaver Backend** to serwerowa warstwa ekosystemu mobilnego TasteSaver (antidotum na marnowanie żywności w gospodarstwach domowych). Udostępnia bezpieczne API REST do:
-- Rejestracji i uwierzytelniania użytkowników za pomocą tokenów **JWT** (JSON Web Tokens).
-- Katalogowania produktów spożywczych na podstawie globalnych kodów kreskowych (EAN / Barcode).
-- Indywidualnego zarządzania pozycjami w spiżarni (**PantryPosition**): śledzenie ilości, dat ważności i statusu przydatności do spożycia.
+**TasteSaver** to zintegrowany ekosystem mobilno-serwerowy przeciwdziałający marnowaniu żywności w gospodarstwach domowych. System składa się z dwóch współpracujących komponentów:
+1. **Backend API (niniejsze repozytorium):** Serwer REST odpowiedzialny za uwierzytelnianie użytkowników, katalog produktów po kodach EAN, synchronizację spiżarni i logikę terminów ważności.
+2. **Aplikacja Mobilna Android:** Natywny klient smartfonowy z wbudowanym skanerem kodów kreskowych aparatem.  
+   👉 [**Repozytorium Aplikacji Android (KacperK2003/TasteSaver)**](https://github.com/KacperK2003/TasteSaver)
 
-Serwer współpracuje bezpośrednio z aplikacją mobilną na system Android (**TasteSaver Android App**).
+---
+
+## 👥 Podział Ról w Zespole
+
+- **Stanisław Gołębiewski (Backend Lead):**
+  - Projekt bazy danych: modele `Product`, `PantryPosition`, rozszerzony użytkownik `CustomUser`.
+  - Implementacja API w Django REST Framework oraz bezpiecznej autoryzacji tokenowej **JWT** (SimpleJWT: logowanie, rejestracja, odświeżanie tokenów).
+  - Skonteneryzowanie serwera i bazy danych przy użyciu **Dockera** (`docker-compose.yml`, `Dockerfile`).
+  - Testy automatyczne API (`pytest`).
+- **Kacper Kozłowski (Mobile Lead):**
+  - Implementacja interfejsu aplikacji mobilnej Android (Material Design, RecyclerView).
+  - Integracja biblioteki skanera kodów kreskowych **ZXing Embedded** z kamerą telefonu.
+  - Klient sieciowy **Retrofit 2** do asynchronicznej komunikacji z backendem.
 
 ---
 
@@ -38,7 +53,10 @@ docker-compose exec web python manage.py migrate
 ```bash
 # 1. Środowisko wirtualne
 python -m venv .venv
-source .venv/bin/activate  # Windows: .\.venv\Scripts\activate
+# Windows:
+.\.venv\Scripts\activate
+# Linux/macOS:
+source .venv/bin/activate
 
 # 2. Instalacja zależności
 pip install -r requirements.txt
@@ -51,7 +69,6 @@ python manage.py runserver
 ---
 
 ## 🧪 Testy
-W projekcie zaimplementowano testy jednostkowe i integracyjne:
 ```bash
 pytest
 ```
