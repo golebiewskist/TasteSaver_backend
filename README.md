@@ -14,7 +14,7 @@
 **TasteSaver** to zintegrowany ekosystem mobilno-serwerowy przeciwdziałający marnowaniu żywności w gospodarstwach domowych. System składa się z dwóch współpracujących komponentów:
 1. **Backend API (niniejsze repozytorium):** Serwer REST odpowiedzialny za uwierzytelnianie użytkowników, katalog produktów po kodach EAN, synchronizację spiżarni i logikę terminów ważności.
 2. **Aplikacja Mobilna Android:** Natywny klient smartfonowy z wbudowanym skanerem kodów kreskowych aparatem.  
-   👉 [**Repozytorium Aplikacji Android (KacperK2003/TasteSaver)**](https://github.com/KacperK2003/TasteSaver)
+   *Aplikacja mobilna realizowana we współpracy z [Kacprem Kozłowskim (@KacperK2003)](https://github.com/KacperK2003) (klient mobilny Android).* 
 
 ---
 
